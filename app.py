@@ -32,7 +32,7 @@ class ImageForm(FlaskForm):
 
 def verify_recaptcha(response_token):
     """Проверяет токен reCAPTCHA"""
-    secret_key = app.config['RECAPTCHA_PRIVATE_KEY']
+    secret_key = app.config['6LfrkY0sAAAAAC8s61zINrelmAoGkZon1Aof3LKY']
     verify_url = 'https://www.google.com/recaptcha/api/siteverify'
 
     data = {
