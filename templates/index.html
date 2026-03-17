@@ -1,0 +1,158 @@
+!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Обработка изображений</title>
+    <style>
+        .images {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .images img {
+            max-width: 400px;
+            border: 2px solid #ccc;
+        }
+        .hidden {
+            display: none;
+        }
+
+        .histograms {
+         display: flex;
+         gap: 20px;
+         margin-top: 30px;
+            justify-content: center;
+        }
+        .histograms canvas {
+         border: 1px solid #ccc;
+         background: #f9f9f9;
+        }
+        .captcha-section {
+        background: #f0f0f0;
+        padding: 20px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+        text-align: center;
+        }
+        .captcha-section img {
+         border: 2px solid #333;
+         margin: 10px 0;
+        }
+        .captcha-section input {
+         padding: 10px;
+          font-size: 16px;
+         width: 250px;
+        }
+        .error {
+        background: #ffdddd;
+        color: #cc0000;
+        padding: 10px;
+        border-radius: 5px;
+        margin: 10px 0;
+        }
+        .hidden {
+        display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Рисуем крест на изображении</h1>
+        <!-- Форма -->
+    <form id="imageForm">
+            <div class="captcha-section">
+        <h3>🤖 Проверка на робота</h3>
+        <img src="data:image/png;base64,{{ captcha_b64 }}" alt="CAPTCHA" id="captcha_img">
+        <br>
+        <input type="text" name="captcha_input" placeholder="Введите символы с картинки" required>
+        <a href="/" style="text-decoration: none;">
+    <button type="button">🔄 Обновить капчу</button>
+</a>
+    </div>
+    <!-- Ошибка капчи (скрыта по умолчанию) -->
+    <div id="captcha_error" class="error hidden"></div>
+        <p>
+            <label>Выберите изображение:</label><br>
+            <input type="file" name="image" accept="image/*" required>
+        </p>
+        <p>
+             <label>Тип креста:</label><br>
+             <input type="radio" name="cross_type" value="vertical" checked> Вертикальный<br>
+             <input type="radio" name="cross_type" value="horizontal"> Горизонтальный
+        </p>
+
+     <p>
+        <label>Цвет креста:</label><br>
+        <input type="color" name="color" value="#ff0000">
+         <span id="color_value">#ff0000</span>
+     </p>
+
+        <p>
+            <button type="submit">Обработать</button>
+        </p>
+    </form>
+
+    <!-- Место для картинок (скрыто по умолчанию) -->
+    <div id="result" class="hidden">
+        <h2>Результат:</h2>
+        <div class="images">
+            <div>
+                <h3>Исходное</h3>
+                <img id="original_img" src="">
+            </div>
+            <div>
+                <h3>Обработанное</h3>
+                <img id="processed_img" src="">
+            </div>
+        </div>
+
+        <div class="histograms">
+        <div>
+            <h3>Распределение цветов (исходное)</h3>
+            <canvas id="original_hist" width="400" height="300"></canvas>
+        </div>
+        <div>
+            <h3>Распределение цветов (обработанное)</h3>
+            <canvas id="processed_hist" width="400" height="300"></canvas>
+        </div>
+    </div>
+
+    </div>
+
+    <!-- JavaScript для отправки без перезагрузки -->
+    <script>
+         document.getElementById('imageForm').addEventListener('submit', async function(e) {
+                 e.preventDefault(); // ОСТАНАВЛИВАЕМ перезагрузку страницы!
+
+            const formData = new FormData(this);
+
+            const response = await fetch('/process', {
+            method: 'POST',
+            body: formData
+            });
+
+             const data = await response.json();
+
+        // Проверяем ошибку
+        if (data.error) {
+            document.getElementById('captcha_error').textContent = '❌ ' + data.error;
+            document.getElementById('captcha_error').classList.remove('hidden');
+            return;
+        }
+
+        // Скрываем ошибку
+        document.getElementById('captcha_error').classList.add('hidden');
+
+        // Показываем выбранный цвет текстом
+            document.querySelector('input[name="color"]').addEventListener('input', function() {
+            document.getElementById('color_value').textContent = this.value;
+            })
+
+        // Показываем результаты
+        document.getElementById('original_img').src = data.original_image;
+        document.getElementById('processed_img').src = data.processed_image;
+        document.getElementById('result').classList.remove('hidden');
+
+});
+    </script>
+</body>
+</html>
