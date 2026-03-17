@@ -18,7 +18,7 @@ app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), 't
 app.config['SECRET_KEY'] = '12345'
 #app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['RECAPTCHA_PUBLIC_KEY'] = '6LfrkY0sAAAAALVCa27xBLHxQ8qzSzoSFdNwG3od'
-app.config['RECAPTCHA_PRIVATE_KEY'] = 'Т6LfrkY0sAAAAAC8s61zINrelmAoGkZon1Aof3LKY'
+app.config['RECAPTCHA_PRIVATE_KEY'] = '6LfrkY0sAAAAAC8s61zINrelmAoGkZon1Aof3LKY'
 
 class ImageForm(FlaskForm):
     """Форма для обработки изображения"""
@@ -32,7 +32,7 @@ class ImageForm(FlaskForm):
 
 def verify_recaptcha(response_token):
     """Проверяет токен reCAPTCHA"""
-    secret_key = app.config['6LfrkY0sAAAAAC8s61zINrelmAoGkZon1Aof3LKY']
+    secret_key = app.config['RECAPTCHA_PRIVATE_KEY']
     verify_url = 'https://www.google.com/recaptcha/api/siteverify'
 
     data = {

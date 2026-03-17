@@ -142,6 +142,10 @@
             drawHistogram('original_hist', data.original_hist);
             drawHistogram('processed_hist', data.processed_hist);
 
+            if (typeof grecaptcha !== 'undefined') {
+                grecaptcha.reset();
+            }
+        document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
         } catch (error) {
             console.error('Ошибка:', error);
             alert('Произошла ошибка при обработке!');
