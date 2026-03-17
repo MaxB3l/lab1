@@ -70,6 +70,41 @@ def get_color_histogram(img):
         'labels': list(range(0, 256, 16))  # Метки для оси X
     }
 
+
+def get_color_stats(img):
+    """Считает простую статистику цветов"""
+    img_array = np.array(img)
+
+    if len(img_array.shape) == 2:
+        img_array = np.stack([img_array] * 3, axis=-1)
+
+    # Средние значения по каналам
+    avg_r = int(np.mean(img_array[:, :, 0]))
+    avg_g = int(np.mean(img_array[:, :, 1]))
+    avg_b = int(np.mean(img_array[:, :, 2]))
+
+    # Общий средний цвет (яркость)
+    brightness = int((avg_r + avg_g + avg_b) / 3)
+
+    # Проценты по каналам
+    total = avg_r + avg_g + avg_b
+    pct_r = round((avg_r / total) * 100) if total > 0 else 0
+    pct_g = round((avg_g / total) * 100) if total > 0 else 0
+    pct_b = round((avg_b / total) * 100) if total > 0 else 0
+
+    # HEX среднего цвета
+    avg_color_hex = '#{:02x}{:02x}{:02x}'.format(avg_r, avg_g, avg_b)
+
+    return {
+        'avg_r': avg_r,
+        'avg_g': avg_g,
+        'avg_b': avg_b,
+        'brightness': brightness,
+        'pct_r': pct_r,
+        'pct_g': pct_g,
+        'pct_b': pct_b,
+        'avg_color_hex': avg_color_hex
+    }
 @app.route('/')
 def index():
 
@@ -81,7 +116,6 @@ def index():
 
 @app.route('/process', methods=['POST'])
 def process():
-    from PIL import Image, ImageDraw
 
     recaptcha_response = request.form.get('g-recaptcha-response')
 
@@ -104,6 +138,7 @@ def process():
     original_io.seek(0)
     original_b64 = base64.b64encode(original_io.read()).decode('utf-8')
 
+    original_stats = get_color_stats(img)
     original_hist = get_color_histogram(img)
 
     draw = ImageDraw.Draw(img)
@@ -116,6 +151,7 @@ def process():
         draw.line((0, height // 2, width, height // 2), fill=color, width=5)
         draw.line((width // 2, height // 3, width // 2, height // 1.5), fill=color, width=5)
 
+    processed_stats = get_color_stats(img)
     processed_hist = get_color_histogram(img)
 
     processed_io = io.BytesIO()
@@ -128,7 +164,9 @@ def process():
         'original_image': 'data:image/png;base64,' + original_b64,
         'processed_image': 'data:image/png;base64,' + processed_b64,
         'original_hist': original_hist,
-        'processed_hist': processed_hist
+        'processed_hist': processed_hist,
+        'original_stats': original_stats,
+        'processed_stats': processed_stats
     })
 
 if __name__ == '__main__':
