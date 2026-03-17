@@ -1,224 +1,320 @@
-!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Обработка изображений</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google reCAPTCHA -->
     <script src="https://www.google.com/recaptcha/api.js"></script>
     <style>
-        .g-recaptcha {
-    display: flex;
-    justify-content: center;
-    margin: 20px 0;
-    }
-        .images {
-            display: flex;
-            gap: 20px;
-            margin-top: 20px;
-        }
-        .images img {
-            max-width: 400px;
-            border: 2px solid #ccc;
-        }
-        .hidden {
-            display: none;
+        /* Минимум кастомных стилей */
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px 0;
         }
 
-        .histograms {
-         display: flex;
-         gap: 20px;
-         margin-top: 30px;
-            justify-content: center;
-        }
-        .histograms canvas {
-         border: 1px solid #ccc;
-         background: #f9f9f9;
+        .header {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
 
-        .error {
-        background: #ffdddd;
-        color: #cc0000;
-        padding: 10px;
-        border-radius: 5px;
-        margin: 10px 0;
+        .header h1 {
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
-        .hidden {
-        display: none;
+
+        .main-card {
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            border: none;
+        }
+
+        .btn-gradient {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            border: none;
+            color: #fff;
+            padding: 12px 50px;
+            font-size: 1.1rem;
+            transition: transform 0.3s;
+        }
+
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            color: #fff;
+        }
+
+        .file-upload-label {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .file-upload-label:hover {
+            transform: translateY(-2px);
+        }
+
+        .result-card {
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            border: none;
+        }
+
+        .image-box img {
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+            border: 3px solid #eee;
+        }
+
+        .chart-box canvas {
+            background: #f9f9f9;
+            border-radius: 10px;
+            border: 2px solid #eee;
+        }
+
+        .color-value {
+            font-family: monospace;
+            background: #f0f0f0;
+            padding: 8px 15px;
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
-    <h1>Рисуем крест на изображении</h1>
+    <div class="container">
+        <!-- Заголовок -->
+        <div class="header text-center">
+            <h1>🎨 Рисуем крест на изображении</h1>
+        </div>
+
         <!-- Форма -->
-    <form id="imageForm" method="POST" enctype="multipart/form-data">
-    {{ form.hidden_tag() }}  <!-- CSRF защита -->
+        <div class="card main-card p-4 mb-4">
+            <form id="imageForm" method="POST" enctype="multipart/form-data">
+                {{ form.hidden_tag() }}
 
-    <p>
-        {{ form.image.label }}<br>
-        {{ form.image(accept="image/*") }}
-    </p>
+                <!-- Загрузка файла -->
+                <div class="text-center mb-4">
+                    <input type="file" name="image" id="imageInput" accept="image/*" required class="d-none">
+                    <label for="imageInput" class="btn btn-gradient file-upload-label">
+                        📁 Выберите изображение
+                    </label>
+                    <div class="mt-2 text-muted" id="fileName">Файл не выбран</div>
+                </div>
 
-    <p>
-        {{ form.cross_type.label }}<br>
-        {% for radio in form.cross_type %}
-            {{ radio }} {{ radio.label.text }}<br>
-        {% endfor %}
-    </p>
+                <!-- Настройки в ряд -->
+                <div class="row g-4 mb-4">
+                    <!-- Тип креста -->
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <label class="form-label fw-bold">Тип креста:</label>
+                                <div class="d-flex justify-content-center gap-4 mt-3">
+                                    <label class="form-check-label">
+                                        <input type="radio" name="cross_type" value="vertical" checked class="form-check-input">
+                                        ⚓ Вертикальный
+                                    </label>
+                                    <label class="form-check-label">
+                                        <input type="radio" name="cross_type" value="horizontal" class="form-check-input">
+                                        ➕ Горизонтальный
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-    <p>
-        <label>Цвет креста:</label><br>
-        <input type="color" name="color" value="#ff0000">
-        <span id="color_value">#ff0000</span>
-    </p>
-<p>
-    <div class="g-recaptcha" data-sitekey="{{ recaptcha_public_key }}"></div>
-</p>
+                    <!-- Цвет креста -->
+                    <div class="col-md-6">
+                        <div class="card h-100">
+                            <div class="card-body text-center">
+                                <label class="form-label fw-bold">Цвет креста:</label>
+                                <div class="d-flex justify-content-center align-items-center gap-3 mt-3">
+                                    <input type="color" name="color" id="colorPicker" value="#ff0000" class="form-control form-control-color" style="width: 60px; height: 50px;">
+                                    <span class="color-value" id="colorValue">#ff0000</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-<p>
-    <button type="submit">Обработать</button>
-</p>
-</form>
+                <!-- Кнопка обработки -->
+                <div class="text-center mb-4">
+                    <button type="submit" class="btn btn-gradient btn-lg">
+                        ✨ Обработать
+                    </button>
+                </div>
 
-    <!-- Место для картинок (скрыто по умолчанию) -->
-    <div id="result" class="hidden">
-        <h2>Результат:</h2>
-        <div class="images">
-            <div>
-                <h3>Исходное</h3>
-                <img id="original_img" src="">
-            </div>
-            <div>
-                <h3>Обработанное</h3>
-                <img id="processed_img" src="">
-            </div>
+                <!-- Капча по центру -->
+                <div class="text-center mb-3">
+                    <div class="g-recaptcha d-inline-block" data-sitekey="{{ recaptcha_public_key }}"></div>
+                </div>
+
+                <!-- Ошибка -->
+                <div id="captcha_error" class="alert alert-danger text-center hidden"></div>
+            </form>
         </div>
 
-        <div class="histograms">
-        <div>
-            <h3>Распределение цветов (исходное)</h3>
-            <canvas id="original_hist" width="400" height="300"></canvas>
-        </div>
-        <div>
-            <h3>Распределение цветов (обработанное)</h3>
-            <canvas id="processed_hist" width="400" height="300"></canvas>
+        <!-- Результаты -->
+        <div id="result" class="card result-card p-4 hidden">
+            <h2 class="text-center mb-4">📊 Результат:</h2>
+
+            <!-- Изображения -->
+            <div class="row g-4 mb-4">
+                <div class="col-md-6">
+                    <div class="image-box text-center">
+                        <h4 class="mb-3">📷 Исходное</h4>
+                        <img id="original_img" src="" class="img-fluid" alt="Исходное изображение">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="image-box text-center">
+                        <h4 class="mb-3">🖼️ Обработанное</h4>
+                        <img id="processed_img" src="" class="img-fluid" alt="Обработанное изображение">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Графики -->
+            <div class="row g-4">
+                <div class="col-md-6">
+                    <div class="chart-box text-center">
+                        <h5 class="mb-3">📈 Распределение цветов (исходное)</h5>
+                        <canvas id="original_hist" width="400" height="300"></canvas>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="chart-box text-center">
+                        <h5 class="mb-3">📈 Распределение цветов (обработанное)</h5>
+                        <canvas id="processed_hist" width="400" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    </div>
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- JavaScript для отправки без перезагрузки -->
+    <!-- Наш JavaScript -->
     <script>
-    // Обработчик изменения цвета (вынесен отдельно!)
-    document.querySelector('input[name="color"]').addEventListener('input', function() {
-        document.getElementById('color_value').textContent = this.value;
-    });
+        // Показ имени файла
+        document.getElementById('imageInput').addEventListener('change', function() {
+            const fileName = this.files[0] ? this.files[0].name : 'Файл не выбран';
+            document.getElementById('fileName').textContent = fileName;
+        });
 
-    // Обработчик отправки формы
-    document.getElementById('imageForm').addEventListener('submit', async function(e) {
-        e.preventDefault();
+        // Показ цвета
+        document.getElementById('colorPicker').addEventListener('input', function() {
+            document.getElementById('colorValue').textContent = this.value;
+        });
 
-        const formData = new FormData(this);
+        // Отправка формы
+        document.getElementById('imageForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
 
-        try {
-            const response = await fetch('/process', {
-                method: 'POST',
-                body: formData
-            });
+            const formData = new FormData(this);
 
-            const data = await response.json();
+            try {
+                const response = await fetch('/process', {
+                    method: 'POST',
+                    body: formData
+                });
 
-            // Проверяем ошибку
+                const data = await response.json();
+
                 if (data.error) {
-                    alert('❌ ' + data.error);
+                    const errorDiv = document.getElementById('captcha_error');
+                    errorDiv.textContent = '❌ ' + data.error;
+                    errorDiv.classList.remove('d-none');
                     return;
                 }
 
+                document.getElementById('captcha_error').classList.add('d-none');
+                document.getElementById('original_img').src = data.original_image;
+                document.getElementById('processed_img').src = data.processed_image;
+                document.getElementById('result').classList.remove('hidden');
 
-            // Показываем результаты
-            document.getElementById('original_img').src = data.original_image;
-            document.getElementById('processed_img').src = data.processed_image;
-            document.getElementById('result').classList.remove('hidden');
+                drawHistogram('original_hist', data.original_hist);
+                drawHistogram('processed_hist', data.processed_hist);
 
-            // Рисуем гистограммы
-            drawHistogram('original_hist', data.original_hist);
-            drawHistogram('processed_hist', data.processed_hist);
+                // Сброс reCAPTCHA
+                if (typeof grecaptcha !== 'undefined') {
+                    grecaptcha.reset();
+                }
 
-            if (typeof grecaptcha !== 'undefined') {
-                grecaptcha.reset();
+                // Прокрутка к результату
+                document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
+
+            } catch (error) {
+                console.error('Ошибка:', error);
+                alert('Произошла ошибка при обработке!');
             }
-        document.getElementById('result').scrollIntoView({ behavior: 'smooth' });
-        } catch (error) {
-            console.error('Ошибка:', error);
-            alert('Произошла ошибка при обработке!');
-        }
-    });
-
-    // Функция рисования гистограммы
-    function drawHistogram(canvasId, histData) {
-        const canvas = document.getElementById(canvasId);
-        const ctx = canvas.getContext('2d');
-
-        // Очищаем canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        const colors = [
-            {name: 'red', hex: '#ff0000', label: 'Красный'},
-            {name: 'green', hex: '#00ff00', label: 'Зелёный'},
-            {name: 'blue', hex: '#0000ff', label: 'Синий'}
-        ];
-
-        // Находим максимальное значение для масштабирования
-        let maxVal = 0;
-        colors.forEach(c => {
-            const channelMax = Math.max(...histData[c.name]);
-            if (channelMax > maxVal) maxVal = channelMax;
         });
 
-        let minX = 255, maxX = 0;
-       colors.forEach(c => {
-        const data = histData[c.name];
-        for (let i = 0; i < data.length; i++) {
-            if (data[i] > 0) {
-                if (i < minX) minX = i;
-                if (i > maxX) maxX = i;
-            }
+        // Гистограмма
+        function drawHistogram(canvasId, histData) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const colors = [
+                {name: 'red', hex: '#ff0000'},
+                {name: 'green', hex: '#00ff00'},
+                {name: 'blue', hex: '#0000ff'}
+            ];
+
+            let maxVal = 0;
+            colors.forEach(c => {
+                const channelMax = Math.max(...histData[c.name]);
+                if (channelMax > maxVal) maxVal = channelMax;
+            });
+
+            let minX = 255, maxX = 0;
+            colors.forEach(c => {
+                const data = histData[c.name];
+                for (let i = 0; i < data.length; i++) {
+                    if (data[i] > 0) {
+                        if (i < minX) minX = i;
+                        if (i > maxX) maxX = i;
+                    }
+                }
+            });
+
+            minX = Math.max(0, minX - 10);
+            maxX = Math.min(255, maxX + 10);
+            const rangeX = maxX - minX;
+
+            const chartHeight = canvas.height - 40;
+            const chartWidth = canvas.width - 40;
+
+            colors.forEach((color, colorIndex) => {
+                const data = histData[color.name];
+                ctx.fillStyle = color.hex;
+
+                for (let i = minX; i <= maxX; i++) {
+                    if (data[i] > 0) {
+                        const barHeight = (data[i] / maxVal) * chartHeight;
+                        const x = 30 + ((i - minX) / rangeX) * chartWidth;
+                        const y = canvas.height - 20 - barHeight;
+                        const barWidth = chartWidth / rangeX;
+
+                        ctx.globalAlpha = 0.7 - (colorIndex * 0.2);
+                        ctx.fillRect(x, y, Math.max(barWidth, 2), barHeight);
+                    }
+                }
+            });
+
+            ctx.globalAlpha = 1.0;
+            ctx.fillStyle = '#000';
+            ctx.font = '10px Arial';
+            ctx.fillText(minX, 0, canvas.height - 5);
+            ctx.fillText(maxX, canvas.width - 20, canvas.height - 5);
         }
-    });
-
-    // Добавляем небольшой отступ по краям
-    minX = Math.max(0, minX - 10);
-    maxX = Math.min(255, maxX + 10);
-    const rangeX = maxX - minX;
-
-    const chartHeight = canvas.height - 40;
-    const chartWidth = canvas.width - 40;
-
-    // Рисуем каждый канал
-    colors.forEach((color, colorIndex) => {
-        const data = histData[color.name];
-        ctx.fillStyle = color.hex;
-
-        for (let i = minX; i <= maxX; i++) {
-            if (data[i] > 0) {
-                const barHeight = (data[i] / maxVal) * chartHeight;
-                const x = 30 + ((i - minX) / rangeX) * chartWidth;
-                const y = canvas.height - 20 - barHeight;
-                const barWidth = chartWidth / rangeX;
-
-                // Рисуем столбик с прозрачностью
-                ctx.globalAlpha = 0.7 - (colorIndex * 0.2);
-                ctx.fillRect(x, y, Math.max(barWidth, 2), barHeight);
-            }
-        }
-    });
-
-    // Подписи осей
-    ctx.globalAlpha = 1.0;
-    ctx.fillStyle = '#000';
-    ctx.font = '10px Arial';
-    ctx.fillText(minX, 0, canvas.height - 5);
-    ctx.fillText(maxX, canvas.width - 20, canvas.height - 5);
-    ctx.fillText('Оттенок', canvas.width / 2 - 20, canvas.height - 5);
-}
-</script>
+    </script>
 </body>
 </html>
