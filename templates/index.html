@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <title>Обработка изображений</title>
+    <script src="https://www.google.com/recaptcha/api.js"></script>
     <style>
+        .g-recaptcha {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+    }
         .images {
             display: flex;
             gap: 20px;
@@ -63,7 +69,13 @@
         <input type="color" name="color" value="#ff0000">
         <span id="color_value">#ff0000</span>
     </p>
+<p>
+    <div class="g-recaptcha" data-sitekey="{{ recaptcha_public_key }}"></div>
+</p>
 
+<p>
+    <button type="submit">Обработать</button>
+</p>
     <p>
         <button type="submit">Обработать</button>
     </p>
