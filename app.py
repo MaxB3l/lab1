@@ -5,7 +5,7 @@ import base64
 import random
 import string
 from captcha.image import ImageCaptcha
-
+# Тест для CI/CD
 app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), 'templates'))
 app.config['SECRET_KEY'] = '12345'
 #app.config['UPLOAD_FOLDER'] = 'static/uploads'
