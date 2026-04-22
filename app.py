@@ -2,21 +2,18 @@ from flask import Flask, render_template, request, session, jsonify
 from flask_wtf import FlaskForm
 from wtforms import FileField, RadioField, StringField, SubmitField
 from wtforms.validators import DataRequired
+from datetime import datetime
+from PIL import Image, ImageDraw, ImageFont
 import io
 import os
 import base64
 import requests
-import random
-import string
 import numpy as np
-from PIL import Image, ImageDraw
 
-#from captcha.image import ImageCaptcha
 
-# Тест для CI/CD
 app = Flask(__name__, template_folder=os.path.join(os.path.dirname(__file__), 'templates'))
 app.config['SECRET_KEY'] = '12345'
-#app.config['UPLOAD_FOLDER'] = 'static/uploads'
+
 app.config['RECAPTCHA_PUBLIC_KEY'] = '6LfrkY0sAAAAALVCa27xBLHxQ8qzSzoSFdNwG3od'
 app.config['RECAPTCHA_PRIVATE_KEY'] = '6LfrkY0sAAAAAC8s61zINrelmAoGkZon1Aof3LKY'
 
@@ -31,7 +28,7 @@ class ImageForm(FlaskForm):
 
 
 def verify_recaptcha(response_token):
-    """Проверяет токен reCAPTCHA"""
+
     secret_key = app.config['RECAPTCHA_PRIVATE_KEY']
     verify_url = 'https://www.google.com/recaptcha/api/siteverify'
 
@@ -46,7 +43,7 @@ def verify_recaptcha(response_token):
     return response_json.get('success', False)
 
 def get_color_histogram(img):
-    """Создаёт гистограмму цветов изображения"""
+
     import numpy as np
 
     img_array = np.array(img)
@@ -72,7 +69,7 @@ def get_color_histogram(img):
 
 
 def get_color_stats(img):
-    """Считает простую статистику цветов"""
+
     img_array = np.array(img)
 
     if len(img_array.shape) == 2:
@@ -133,6 +130,7 @@ def process():
         return jsonify({'error': 'Выберите изображение!'}), 400
 
     img = Image.open(file.stream)
+
     original_io = io.BytesIO()
     img.save(original_io, 'PNG')
     original_io.seek(0)
@@ -150,6 +148,46 @@ def process():
     else:
         draw.line((0, height // 2, width, height // 2), fill=color, width=5)
         draw.line((width // 2, height // 3, width // 2, height // 1.5), fill=color, width=5)
+
+    add_timestamp = request.form.get('add_timestamp')  # 'on' если чекбокс выбран
+
+    if add_timestamp:
+
+        now = datetime.now().strftime('%d.%m.%Y %H:%M')
+
+        font_size = max(12, min(width, height) // 40)
+        padding = max(10, min(width, height) // 50)
+
+        font = ImageFont.load_default(size=font_size)
+
+        char_width = int(font_size * 0.6)
+        text_width = len(now) * char_width
+        text_height = font_size
+
+        # Позиция: нижний правый угол с отступом
+        x = width - text_width - padding # отступ справа
+        y = height - text_height - padding # отступ снизу
+
+        overlay = Image.new('RGBA', img.size, (255, 255, 255, 0))
+        overlay_draw = ImageDraw.Draw(overlay)
+
+        overlay_draw.rectangle(
+            [(x , y ), (x + text_width - padding, y + text_height + 2)],
+            fill=(255, 255, 255, 170)
+        )
+        # Рисуем полупрозрачный фон для читаемости текста
+
+        img = Image.alpha_composite(img.convert('RGBA'), overlay)
+        draw = ImageDraw.Draw(img)
+
+        # Рисуем текст (цвет как у креста, но тёмный для контраста)
+        text_color = color if color.startswith('#') else '#000000'
+        draw.text(
+            (x, y),
+            now,
+            fill=text_color,
+            font=font,
+        )
 
     processed_stats = get_color_stats(img)
     processed_hist = get_color_histogram(img)
